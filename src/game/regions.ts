@@ -8,41 +8,41 @@ const regionMap: Record<string, string> = {
   LT: 'CIS', LV: 'CIS', EE: 'CIS', GE: 'CIS', AM: 'CIS',
   AZ: 'CIS', MD: 'CIS', TJ: 'CIS', KG: 'CIS', TM: 'CIS',
 
-  // Europe
-  DE: 'Europe', FR: 'Europe', SE: 'Europe', DK: 'Europe', NO: 'Europe',
-  FI: 'Europe', PL: 'Europe', CZ: 'Europe', SK: 'Europe', HU: 'Europe',
-  RO: 'Europe', BG: 'Europe', HR: 'Europe', RS: 'Europe', BA: 'Europe',
-  SI: 'Europe', PT: 'Europe', ES: 'Europe', IT: 'Europe', NL: 'Europe',
-  BE: 'Europe', AT: 'Europe', CH: 'Europe', GB: 'Europe', IE: 'Europe',
-  IS: 'Europe', GR: 'Europe', TR: 'Europe', IL: 'Europe', ME: 'Europe',
-  MK: 'Europe', AL: 'Europe', XK: 'Europe', CY: 'Europe', MT: 'Europe',
-  LU: 'Europe',
+  // EU
+  DE: 'EU', FR: 'EU', SE: 'EU', DK: 'EU', NO: 'EU',
+  FI: 'EU', PL: 'EU', CZ: 'EU', SK: 'EU', HU: 'EU',
+  RO: 'EU', BG: 'EU', HR: 'EU', RS: 'EU', BA: 'EU',
+  SI: 'EU', PT: 'EU', ES: 'EU', IT: 'EU', NL: 'EU',
+  BE: 'EU', AT: 'EU', CH: 'EU', GB: 'EU', IE: 'EU',
+  IS: 'EU', GR: 'EU', TR: 'EU', IL: 'EU', ME: 'EU',
+  MK: 'EU', AL: 'EU', XK: 'EU', CY: 'EU', MT: 'EU',
+  LU: 'EU',
 
-  // North America
-  US: 'North America', CA: 'North America',
+  // NA
+  US: 'NA', CA: 'NA',
 
-  // South America
-  BR: 'South America', AR: 'South America', CL: 'South America',
-  UY: 'South America', MX: 'South America', CO: 'South America',
-  PE: 'South America', VE: 'South America', EC: 'South America',
-  BO: 'South America', PY: 'South America',
+  // SA
+  BR: 'SA', AR: 'SA', CL: 'SA',
+  UY: 'SA', MX: 'SA', CO: 'SA',
+  PE: 'SA', VE: 'SA', EC: 'SA',
+  BO: 'SA', PY: 'SA',
 
   // Asia
   CN: 'Asia', JP: 'Asia', KR: 'Asia', IN: 'Asia', ID: 'Asia',
   MY: 'Asia', TH: 'Asia', PH: 'Asia', SG: 'Asia', VN: 'Asia',
   MN: 'Asia', TW: 'Asia', HK: 'Asia',
 
-  // Oceania
-  AU: 'Oceania', NZ: 'Oceania',
+  // OCE
+  AU: 'OCE', NZ: 'OCE',
 };
 
 const regionEmojis: Record<string, string> = {
   'CIS': '🏔️',
-  'Europe': '🇪🇺',
-  'North America': '🌎',
-  'South America': '🌎',
+  'EU': '🇪🇺',
+  'NA': '🌎',
+  'SA': '🌎',
   'Asia': '🌏',
-  'Oceania': '🌊',
+  'OCE': '🌊',
   'Other': '🌍',
 };
 
@@ -53,4 +53,12 @@ export function getRegion(nationalityCode: string | null): string {
 
 export function getRegionEmoji(region: string): string {
   return regionEmojis[region] ?? '🌍';
+}
+
+export function countryToFlag(code: string | null): string {
+  if (!code || code.length !== 2) return '';
+  const upper = code.toUpperCase();
+  return String.fromCodePoint(
+    ...Array.from(upper).map(c => 0x1F1E6 + c.charCodeAt(0) - 65)
+  );
 }

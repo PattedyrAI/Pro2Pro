@@ -245,6 +245,10 @@ function runMigrations(db: Database.Database): void {
   try { db.exec(`ALTER TABLE custom_game_attempts ADD COLUMN source TEXT DEFAULT 'bot'`); } catch (_) {}
   // Add total_points to user_stats
   try { db.exec(`ALTER TABLE user_stats ADD COLUMN total_points INTEGER DEFAULT 0`); } catch (_) {}
+
+  // Add total_links and games_given_up to user_all_stats
+  try { db.exec(`ALTER TABLE user_all_stats ADD COLUMN total_links INTEGER DEFAULT 0`); } catch (_) {}
+  try { db.exec(`ALTER TABLE user_all_stats ADD COLUMN games_given_up INTEGER DEFAULT 0`); } catch (_) {}
 }
 
 export function closeDb(): void {

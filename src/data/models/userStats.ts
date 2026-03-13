@@ -21,6 +21,13 @@ export interface UserAllStats {
   current_streak: number;
   max_streak: number;
   avg_path_length: number;
+  total_links: number;
+  games_given_up: number;
+}
+
+export interface CountryStat {
+  nationality: string;
+  pick_count: number;
 }
 
 export interface PlayerPick {
@@ -141,6 +148,8 @@ export function getUserAllStats(userId: string): UserAllStats {
       current_streak: 0,
       max_streak: 0,
       avg_path_length: 0,
+      total_links: 0,
+      games_given_up: 0,
     };
   }
 
@@ -181,9 +190,10 @@ function updateAllStats(userId: string, gameMode: 'daily' | 'custom' | 'random',
       ${wonCol} = ${wonCol} + ?,
       current_streak = ?,
       max_streak = ?,
-      avg_path_length = ?
+      avg_path_length = ?,
+      total_links = total_links + ?
     WHERE discord_user_id = ?
-  `).run(isOptimal ? 1 : 0, newStreak, newMaxStreak, newAvg, userId);
+  `).run(isOptimal ? 1 : 0, newStreak, newMaxStreak, newAvg, pathLength, userId);
 }
 
 export function savePlayerPicks(userId: string, path: number[]): void {
@@ -260,6 +270,52 @@ export function getUserRegionStats(userId: string): RegionStat[] {
   return Array.from(regionCounts.entries())
     .map(([region, pick_count]) => ({ region, pick_count }))
     .sort((a, b) => b.pick_count - a.pick_count);
+}
+
+export function recordGiveUp(userId: string, gameMode: 'daily' | 'custom' | 'random'): void {
+  const db = getDb();
+  // Ensure the row exists
+  getUserAllStats(userId);
+
+  db.prepare(`
+    UPDATE user_all_stats SET games_given_up = games_given_up + 1
+    WHERE discord_user_id = ?
+  `).run(userId);
+
+  // Break daily streak on give-up
+  if (gameMode === 'daily') {
+    db.prepare(`
+      UPDATE user_all_stats SET current_streak = 0
+      WHERE discord_user_id = ?
+    `).run(userId);
+    // Also break streak in user_stats for consistency
+    db.prepare(`
+      UPDATE user_stats SET current_streak = 0
+      WHERE discord_user_id = ?
+    `).run(userId);
+  }
+}
+
+export function getUserCountryStats(userId: string, limit = 5): CountryStat[] {
+  const db = getDb();
+  return db.prepare(`
+    SELECT p.nationality, SUM(upp.pick_count) as pick_count
+    FROM user_player_picks upp
+    JOIN players p ON p.id = upp.player_id
+    WHERE upp.discord_user_id = ? AND p.nationality IS NOT NULL
+    GROUP BY p.nationality
+    ORDER BY pick_count DESC
+    LIMIT ?
+  `).all(userId, limit) as CountryStat[];
+}
+
+export function getUniquePlayerCount(userId: string): number {
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT COUNT(DISTINCT player_id) as count FROM user_player_picks
+    WHERE discord_user_id = ?
+  `).get(userId) as { count: number } | undefined;
+  return row?.count ?? 0;
 }
 
 export function getLeaderboard(guildId: string, limit = 10): (UserStats & { rank: number })[] {
