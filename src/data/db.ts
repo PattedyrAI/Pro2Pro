@@ -199,6 +199,52 @@ function runMigrations(db: Database.Database): void {
     INSERT OR IGNORE INTO user_all_stats (discord_user_id, daily_played, daily_won, current_streak, max_streak, avg_path_length)
     SELECT discord_user_id, games_played, games_won, current_streak, max_streak, avg_path_length FROM user_stats
   `);
+
+  // Web sessions
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS web_sessions (
+      id TEXT PRIMARY KEY,
+      discord_user_id TEXT NOT NULL,
+      discord_username TEXT NOT NULL,
+      discord_avatar TEXT,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT,
+      expires_at DATETIME NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS user_guilds (
+      discord_user_id TEXT NOT NULL,
+      guild_id TEXT NOT NULL,
+      guild_name TEXT NOT NULL,
+      guild_icon TEXT,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (discord_user_id, guild_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS user_points (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      discord_user_id TEXT NOT NULL,
+      guild_id TEXT,
+      points INTEGER NOT NULL,
+      reason TEXT NOT NULL,
+      source TEXT NOT NULL,
+      puzzle_id INTEGER,
+      custom_game_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_user_points_user ON user_points(discord_user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_points_guild ON user_points(guild_id);
+    CREATE INDEX IF NOT EXISTS idx_web_sessions_user ON web_sessions(discord_user_id);
+  `);
+
+  // Add source column to user_attempts
+  try { db.exec(`ALTER TABLE user_attempts ADD COLUMN source TEXT DEFAULT 'bot'`); } catch (_) {}
+  // Add source column to custom_game_attempts
+  try { db.exec(`ALTER TABLE custom_game_attempts ADD COLUMN source TEXT DEFAULT 'bot'`); } catch (_) {}
+  // Add total_points to user_stats
+  try { db.exec(`ALTER TABLE user_stats ADD COLUMN total_points INTEGER DEFAULT 0`); } catch (_) {}
 }
 
 export function closeDb(): void {
