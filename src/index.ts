@@ -5,6 +5,7 @@ import { getDb, closeDb } from './data/db';
 import { playerGraph } from './game/graph';
 import { pandaScoreSync } from './data/sync/pandaScore';
 import { startScheduler, generateAndPostDailyPuzzle } from './scheduler/daily';
+import { startApiServer } from './api/server';
 
 async function main(): Promise<void> {
   console.log('[Pro2Pro] Starting...');
@@ -54,6 +55,9 @@ async function main(): Promise<void> {
 
     // Start scheduled jobs
     startScheduler();
+
+    // Start web API server
+    startApiServer();
 
     // Generate today's puzzle if it doesn't exist
     generateAndPostDailyPuzzle().catch(err => {
