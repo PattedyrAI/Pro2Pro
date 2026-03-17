@@ -133,12 +133,23 @@ export class PandaScoreSync {
     `);
 
     const insertPlayer = db.prepare(`
-      INSERT OR REPLACE INTO players (id, name, full_name, nationality, image_url, updated_at)
+      INSERT INTO players (id, name, full_name, nationality, image_url, updated_at)
       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        full_name = excluded.full_name,
+        nationality = excluded.nationality,
+        image_url = excluded.image_url,
+        updated_at = CURRENT_TIMESTAMP
     `);
 
     const insertRoster = db.prepare(`
       INSERT OR IGNORE INTO rosters (player_id, team_id, tournament_id) VALUES (?, ?, ?)
+    `);
+
+    const markFemale = db.prepare(`UPDATE players SET is_female = 1 WHERE id = ?`);
+    const ensureFemalePlayer = db.prepare(`
+      INSERT OR IGNORE INTO players (id, name, is_female) VALUES (?, ?, 1)
     `);
 
     let playerCount = 0;
@@ -153,10 +164,26 @@ export class PandaScoreSync {
     console.log(`[Sync] Fetched ${teams.length} teams`);
 
     let skippedFemaleTeams = 0;
+    let markedFemalePlayers = 0;
     const teamTransaction = db.transaction(() => {
       for (const team of teams) {
         if (!team.id || !team.name) continue;
-        if (isFemaleTeam(team)) { skippedFemaleTeams++; continue; }
+        if (isFemaleTeam(team)) {
+          skippedFemaleTeams++;
+          // Mark players on female teams so they can be filtered from game pools
+          if (team.players && Array.isArray(team.players)) {
+            for (const player of team.players) {
+              if (!player.id) continue;
+              // If player already exists, mark as female; otherwise insert minimal record
+              const updated = markFemale.run(player.id);
+              if (updated.changes === 0) {
+                ensureFemalePlayer.run(player.id, player.name ?? 'Unknown');
+              }
+              markedFemalePlayers++;
+            }
+          }
+          continue;
+        }
         insertTeam.run(team.id, team.name, team.acronym ?? null, team.image_url ?? null);
 
         if (team.players && Array.isArray(team.players)) {
@@ -180,7 +207,7 @@ export class PandaScoreSync {
     });
 
     teamTransaction();
-    console.log(`[Sync] Phase 1 complete: ${teams.length} teams (${skippedFemaleTeams} female skipped), ${playerCount} players`);
+    console.log(`[Sync] Phase 1 complete: ${teams.length} teams (${skippedFemaleTeams} female skipped, ${markedFemalePlayers} female players marked), ${playerCount} players`);
 
     // ── Phase 2: Fetch historical rosters from past tournaments ──
     console.log('[Sync] Phase 2: Fetching historical tournament rosters...');
@@ -210,7 +237,17 @@ export class PandaScoreSync {
           const players = entry.players;
 
           if (!team?.id || !team?.name || !Array.isArray(players)) continue;
-          if (isFemaleTeam(team)) continue;
+          if (isFemaleTeam(team)) {
+            // Mark players on female teams but skip roster entries
+            for (const player of players) {
+              if (!player?.id) continue;
+              const updated = markFemale.run(player.id);
+              if (updated.changes === 0 && player.name) {
+                ensureFemalePlayer.run(player.id, player.name);
+              }
+            }
+            continue;
+          }
 
           // Upsert team
           insertTeam.run(team.id, team.name, team.acronym ?? null, team.image_url ?? null);
@@ -274,9 +311,10 @@ export class PandaScoreSync {
     console.log(`[Sync] Phase 2 complete: processed ${tournaments.length} tournaments, ${tournamentRosters} roster entries`);
     console.log(`[Sync] Total unique: ${uniquePlayers} players, ${uniqueRosters} roster connections`);
 
-    // Prune orphaned players (no roster entries after re-sync)
+    // Prune orphaned players (no roster entries after re-sync), but keep female-flagged players
     const pruned = db.prepare(`
       DELETE FROM players WHERE id NOT IN (SELECT DISTINCT player_id FROM rosters)
+        AND is_female = 0
     `).run();
     if (pruned.changes > 0) {
       console.log(`[Sync] Pruned ${pruned.changes} orphaned players with no roster entries`);

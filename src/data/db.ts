@@ -249,6 +249,9 @@ function runMigrations(db: Database.Database): void {
   // Add total_links and games_given_up to user_all_stats
   try { db.exec(`ALTER TABLE user_all_stats ADD COLUMN total_links INTEGER DEFAULT 0`); } catch (_) {}
   try { db.exec(`ALTER TABLE user_all_stats ADD COLUMN games_given_up INTEGER DEFAULT 0`); } catch (_) {}
+
+  // Add is_female flag to players table (set during sync when player appears on a female team)
+  try { db.exec(`ALTER TABLE players ADD COLUMN is_female INTEGER DEFAULT 0`); } catch (_) {}
 }
 
 export function closeDb(): void {
