@@ -7,7 +7,7 @@ import { validateLink } from '../game/validator';
 import { getPuzzleByNumber, getTodayPuzzle, getPuzzleById } from '../data/models/puzzle';
 import { getUserAttempt, saveUserAttempt, getUserStats } from '../data/models/userStats';
 import { authRequired } from './middleware';
-import { createWebSession, getWebSession, deleteWebSession } from './webGameState';
+import { createWebSession, getWebSession, updateWebSession, deleteWebSession } from './webGameState';
 import { awardCompletionPoints } from './points';
 import { config } from '../config';
 import { getFullPath } from '../bot/interactions/gameState';
@@ -287,6 +287,9 @@ router.post('/:sessionId/guess', authRequired, (req, res) => {
     });
     return;
   }
+
+  // Persist updated game state to DB (SQLite-backed sessions return a copy, not a reference)
+  updateWebSession(sessionId, game);
 
   const player = playerGraph.getPlayer(playerId);
   res.json({

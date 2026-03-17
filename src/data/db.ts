@@ -252,6 +252,18 @@ function runMigrations(db: Database.Database): void {
 
   // Add is_female flag to players table (set during sync when player appears on a female team)
   try { db.exec(`ALTER TABLE players ADD COLUMN is_female INTEGER DEFAULT 0`); } catch (_) {}
+
+  // Persistent web game sessions (survives server restarts/redeploys)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS web_game_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      game_state TEXT NOT NULL,
+      last_activity INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_web_game_sessions_user ON web_game_sessions(user_id);
+  `);
 }
 
 export function closeDb(): void {
