@@ -24,7 +24,7 @@ export function PathDisplay({ forwardPath, backwardPath, complete }: PathDisplay
               ? 'bg-green-500/10 border-green-500/40 text-green-400 shadow-lg shadow-green-500/10'
               : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
           }`}>
-            {player.name}
+            {player.name || '???'}
           </div>
         </div>
       ))}
@@ -49,7 +49,7 @@ export function PathDisplay({ forwardPath, backwardPath, complete }: PathDisplay
               ? 'bg-red-500/10 border-red-500/40 text-red-400 shadow-lg shadow-red-500/10'
               : 'bg-purple-500/10 border-purple-500/30 text-purple-300'
           }`}>
-            {player.name}
+            {player.name || '???'}
           </div>
         </div>
       ))}

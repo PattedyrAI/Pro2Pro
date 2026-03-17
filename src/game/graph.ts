@@ -80,6 +80,7 @@ export class PlayerGraph {
   private playerAPlusCount = new Map<number, number>(); // playerId -> A+ tier tournament count
   private playerBPlusCount = new Map<number, number>(); // playerId -> B+ tier tournament count
   private playerCctCount = new Map<number, number>(); // playerId -> CCT tournament count
+  private femalePlayerIds = new Set<number>(); // players flagged as female in DB
 
   get nodeCount(): number {
     return this.players.size;
@@ -221,6 +222,17 @@ export class PlayerGraph {
       // Table may not exist yet — tier data will be empty, fallback logic handles it
     }
 
+    // Load female player flags from database
+    this.femalePlayerIds.clear();
+    try {
+      const femaleRows = db.prepare('SELECT id FROM players WHERE is_female = 1').all() as any[];
+      for (const row of femaleRows) {
+        this.femalePlayerIds.add(row.id);
+      }
+    } catch (_) {
+      // Column may not exist yet
+    }
+
     // For each (team, tournament) group, connect all players who were on that roster
     for (const [groupKey, players] of groupPlayers) {
       const teamId = parseInt(groupKey.split(':')[0], 10);
@@ -231,7 +243,7 @@ export class PlayerGraph {
       }
     }
 
-    console.log(`[Graph] Built graph: ${this.nodeCount} players, ${this.edgeCount} edges, ${this.notablePlayerIds.size} notable players (${this.notableTeamIds.size} notable teams)`);
+    console.log(`[Graph] Built graph: ${this.nodeCount} players, ${this.edgeCount} edges, ${this.notablePlayerIds.size} notable players (${this.notableTeamIds.size} notable teams), ${this.femalePlayerIds.size} female excluded`);
   }
 
   private addEdge(a: number, b: number, teamId: number): void {
@@ -375,10 +387,10 @@ export class PlayerGraph {
       }
     }
 
-    // Apply notable filter if requested
-    let filtered = results;
+    // Apply notable filter if requested, and always exclude female players
+    let filtered = results.filter(p => !this.isFemalePlayer(p.id));
     if (filterNotable) {
-      filtered = results.filter(p => isExactMatch(p.id) || this.isNotablePlayer(p.id));
+      filtered = filtered.filter(p => isExactMatch(p.id) || this.isNotablePlayer(p.id));
     }
 
     // Sort: exact > starts-with > notable tier score > team count > alphabetical
@@ -557,9 +569,10 @@ export class PlayerGraph {
   }
 
   /**
-   * Check if a player is on a female team (team name/acronym contains .F, fe, Female).
+   * Check if a player is female (DB flag from sync, or team name heuristic).
    */
   isFemalePlayer(id: number): boolean {
+    if (this.femalePlayerIds.has(id)) return true;
     const teams = this.playerTeamNames.get(id) ?? [];
     return teams.some(t =>
       /\.F$|\.Fe$| fe$|^.*Female.*$| fe /i.test(t)
@@ -620,33 +633,36 @@ export class PlayerGraph {
   }
 
   /**
-   * Get "notable" player IDs — players who meet the isNotablePlayer() criteria.
+   * Get "notable" player IDs — players who meet the isNotablePlayer() criteria, excluding female players.
    * Falls back to players with multiple notable teams or 3+ teams if no tier data.
    */
   getNotablePlayerIds(): number[] {
+    const notFemale = (id: number) => !this.isFemalePlayer(id);
+
     // If tier data is available, use isNotablePlayer()
     if (this.playerBPlusCount.size > 0 || this.playerCctCount.size > 0) {
       return Array.from(this.players.keys()).filter(
-        id => this.isNotablePlayer(id) && (this.adjacency.get(id)?.size ?? 0) > 0
+        id => this.isNotablePlayer(id) && notFemale(id) && (this.adjacency.get(id)?.size ?? 0) > 0
       );
     }
     // Fallback: old notable team logic
     if (this.notablePlayerIds.size > 0) {
       return Array.from(this.playerNotableTeamCount.entries())
-        .filter(([id, count]) => count >= 2 && (this.adjacency.get(id)?.size ?? 0) > 0)
+        .filter(([id, count]) => count >= 2 && notFemale(id) && (this.adjacency.get(id)?.size ?? 0) > 0)
         .map(([id]) => id);
     }
     // Final fallback: players with multiple teams
     return Array.from(this.adjacency.keys()).filter(id => {
       const teamCount = this.playerTeamNames.get(id)?.length ?? 0;
-      return teamCount >= 3 && (this.adjacency.get(id)?.size ?? 0) > 0;
+      return teamCount >= 3 && notFemale(id) && (this.adjacency.get(id)?.size ?? 0) > 0;
     });
   }
 
-  /** Get A+ tier player IDs — players with 5+ premier tournaments (BLAST/PGL/IEM/ESL) */
+  /** Get A+ tier player IDs — players with 5+ premier tournaments (BLAST/PGL/IEM/ESL), excluding female players */
   getFamousPlayerIds(): number[] {
     return Array.from(this.players.keys()).filter(id => {
       if ((this.adjacency.get(id)?.size ?? 0) === 0) return false;
+      if (this.isFemalePlayer(id)) return false;
       return (this.playerAPlusCount.get(id) ?? 0) >= 5;
     });
   }

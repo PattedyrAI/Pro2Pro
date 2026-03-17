@@ -51,8 +51,8 @@ router.post('/start', authRequired, async (req, res) => {
     res.json({
       sessionId,
       puzzleId: puzzle.id,
-      startPlayer: { id: puzzle.start_player_id, name: startPlayer?.name, nationality: startPlayer?.nationality, imageUrl: startPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(puzzle.start_player_id, 2) },
-      endPlayer: { id: puzzle.end_player_id, name: endPlayer?.name, nationality: endPlayer?.nationality, imageUrl: endPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(puzzle.end_player_id, 2) },
+      startPlayer: { id: puzzle.start_player_id, name: startPlayer?.name ?? '???', nationality: startPlayer?.nationality, imageUrl: startPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(puzzle.start_player_id, 2) },
+      endPlayer: { id: puzzle.end_player_id, name: endPlayer?.name ?? '???', nationality: endPlayer?.nationality, imageUrl: endPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(puzzle.end_player_id, 2) },
     });
 
   } else if (mode === 'random') {
@@ -114,8 +114,8 @@ router.post('/start', authRequired, async (req, res) => {
         optimalPathLength: result.length,
         par: calculatePar(result.length),
         numValidPaths: numPaths,
-        startPlayer: { id: startId, name: startPlayer?.name, nationality: startPlayer?.nationality, imageUrl: startPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(startId, 2) },
-        endPlayer: { id: endId, name: endPlayer?.name, nationality: endPlayer?.nationality, imageUrl: endPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(endId, 2) },
+        startPlayer: { id: startId, name: startPlayer?.name ?? '???', nationality: startPlayer?.nationality, imageUrl: startPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(startId, 2) },
+        endPlayer: { id: endId, name: endPlayer?.name ?? '???', nationality: endPlayer?.nationality, imageUrl: endPlayer?.imageUrl, teams: playerGraph.getPlayerFullTeamNames(endId, 2) },
       });
       return;
     }
@@ -166,8 +166,8 @@ router.post('/start', authRequired, async (req, res) => {
       gameId,
       optimalPathLength: result.length,
       numValidPaths: numPaths,
-      startPlayer: { id: startPlayerId, name: p1.name, nationality: p1.nationality, imageUrl: p1.imageUrl, teams: playerGraph.getPlayerFullTeamNames(startPlayerId, 2) },
-      endPlayer: { id: endPlayerId, name: p2.name, nationality: p2.nationality, imageUrl: p2.imageUrl, teams: playerGraph.getPlayerFullTeamNames(endPlayerId, 2) },
+      startPlayer: { id: startPlayerId, name: p1.name ?? '???', nationality: p1.nationality, imageUrl: p1.imageUrl, teams: playerGraph.getPlayerFullTeamNames(startPlayerId, 2) },
+      endPlayer: { id: endPlayerId, name: p2.name ?? '???', nationality: p2.nationality, imageUrl: p2.imageUrl, teams: playerGraph.getPlayerFullTeamNames(endPlayerId, 2) },
     });
   } else {
     res.status(400).json({ error: 'Invalid mode. Use: daily, random, custom' });
@@ -293,9 +293,9 @@ router.post('/:sessionId/guess', authRequired, (req, res) => {
     valid: true,
     complete: false,
     teams: teamNames,
-    player: { id: playerId, name: player?.name, nationality: player?.nationality },
-    forwardPath: game.forwardPath.map(id => ({ id, name: playerGraph.getPlayer(id)?.name })),
-    backwardPath: game.backwardPath.map(id => ({ id, name: playerGraph.getPlayer(id)?.name })),
+    player: { id: playerId, name: player?.name ?? '???', nationality: player?.nationality },
+    forwardPath: game.forwardPath.map(id => ({ id, name: playerGraph.getPlayer(id)?.name ?? '???' })),
+    backwardPath: game.backwardPath.map(id => ({ id, name: playerGraph.getPlayer(id)?.name ?? '???' })),
   });
 });
 

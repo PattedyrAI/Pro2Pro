@@ -92,8 +92,8 @@ export function GameBoard({
             <div key={idx} className="bg-gray-900/50 border border-gray-700 rounded-xl p-4">
               <div className="flex items-center justify-center gap-2 flex-wrap">
                 {path.map((p: any, i: number) => (
-                  <span key={p.id} className="flex items-center gap-1">
-                    <span className="text-sm text-white">{p.name}</span>
+                  <span key={p.id ?? i} className="flex items-center gap-1">
+                    <span className="text-sm text-white">{p.name || '???'}</span>
                     {i < path.length - 1 && <span className="text-gray-500 mx-1">{'\u2192'}</span>}
                   </span>
                 ))}
