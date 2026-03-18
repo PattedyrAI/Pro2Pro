@@ -274,7 +274,23 @@ router.post('/:sessionId/guess', authOptional, (req, res) => {
       id,
       name: playerGraph.getPlayer(id)?.name ?? '???',
       nationality: playerGraph.getPlayer(id)?.nationality,
+      imageUrl: playerGraph.getPlayer(id)?.imageUrl ?? null,
     }));
+
+    // Build full team connection data for each link in the path
+    const pathTeamLinks = [];
+    for (let i = 0; i < fullPath.length - 1; i++) {
+      const shared = playerGraph.getSharedTeams(fullPath[i], fullPath[i + 1]);
+      pathTeamLinks.push({
+        fromId: fullPath[i],
+        toId: fullPath[i + 1],
+        teams: shared.map(t => ({
+          name: t.teamAcronym ?? t.teamName,
+          fullName: t.teamName,
+          imageUrl: t.teamImageUrl,
+        })),
+      });
+    }
 
     const par = calculatePar(optimalLength);
     const scoreToPar = pathLength - par;
@@ -285,6 +301,7 @@ router.post('/:sessionId/guess', authOptional, (req, res) => {
       complete: true,
       teams: teamInfo,
       path: pathNames,
+      pathTeamLinks,
       pathLength,
       optimalLength,
       par,
