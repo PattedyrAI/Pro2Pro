@@ -40,7 +40,8 @@ export function scorePath(
   puzzleNumber: number,
   difficulty: string,
   difficultyStars: number,
-  optimalPathNames?: string[] | null
+  optimalPathNames?: string[] | null,
+  username?: string
 ): ScoreResult {
   const pathLength = playerIds.length - 1;
   const par = calculatePar(optimalLength);
@@ -54,7 +55,7 @@ export function scorePath(
   const scoreStr = formatScoreToPar(scoreToPar);
 
   const lines = [
-    `Pro2Pro #${puzzleNumber} — ${rating} (${scoreStr})`,
+    username ? `${username}'s Pro2Pro #${puzzleNumber} — ${rating} (${scoreStr})` : `Pro2Pro #${puzzleNumber} — ${rating} (${scoreStr})`,
     blocks,
     `Shortest: ${optimalLength} | Par: ${par} | You: ${pathLength}`,
     `Difficulty: ${difficulty} ${starEmoji}`,

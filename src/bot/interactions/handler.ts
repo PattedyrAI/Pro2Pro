@@ -479,7 +479,7 @@ async function completeGame(interaction: ButtonInteraction, game: import('./game
     ? optimalPath.path.map(id => playerGraph.getPlayerNameWithFlag(id))
     : null;
 
-  const { shareText } = scorePath(fullPath, optimalLength, puzzleNumber, difficulty, difficultyStars, optimalPathNames);
+  const { shareText } = scorePath(fullPath, optimalLength, puzzleNumber, difficulty, difficultyStars, optimalPathNames, interaction.user.username);
   const embed = createResultEmbed(
     puzzleNumber,
     pathNames,

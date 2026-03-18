@@ -234,9 +234,14 @@ export class PlayerGraph {
       // Column may not exist yet
     }
 
-    // For each (team, tournament) group, connect all players who were on that roster
+    // For each (team, tournament) group, connect all players who were on that roster.
+    // Skip NULL tournament groups (current roster listings) — they include benched
+    // players who never actually played together. Real tournament entries are the
+    // source of truth for teammate connections.
     for (const [groupKey, players] of groupPlayers) {
-      const teamId = parseInt(groupKey.split(':')[0], 10);
+      const [teamIdStr, tournamentIdStr] = groupKey.split(':');
+      if (tournamentIdStr === 'null') continue; // skip current-roster-only groups
+      const teamId = parseInt(teamIdStr, 10);
       for (let i = 0; i < players.length; i++) {
         for (let j = i + 1; j < players.length; j++) {
           this.addEdge(players[i], players[j], teamId);
@@ -547,14 +552,17 @@ export class PlayerGraph {
   findPlayerByName(name: string): PlayerNode | undefined {
     const ids = this.playerNameIndex.get(name.toLowerCase());
     if (!ids || ids.length === 0) return undefined;
-    // If multiple, return the one with the most team connections
     if (ids.length === 1) return this.players.get(ids[0]);
+    // If multiple, return the one with the highest tier score, then most roster entries
     let bestId = ids[0];
-    let bestTeams = 0;
+    let bestTier = -1;
+    let bestRosters = 0;
     for (const id of ids) {
-      const count = this.playerTeamNames.get(id)?.length ?? 0;
-      if (count > bestTeams) {
-        bestTeams = count;
+      const tier = this.getPlayerTierScore(id);
+      const rosters = this.getTotalRosterCount(id);
+      if (tier > bestTier || (tier === bestTier && rosters > bestRosters)) {
+        bestTier = tier;
+        bestRosters = rosters;
         bestId = id;
       }
     }
@@ -667,6 +675,15 @@ export class PlayerGraph {
       if (this.isFemalePlayer(id)) return false;
       return (this.playerAPlusCount.get(id) ?? 0) >= 30;
     });
+  }
+
+  /** Get total roster entry count for a player (proxy for career activity). */
+  getTotalRosterCount(id: number): number {
+    const counts = this.playerTeamRosterCounts.get(id);
+    if (!counts) return 0;
+    let total = 0;
+    for (const c of counts.values()) total += c;
+    return total;
   }
 
   areConnected(playerA: number, playerB: number): boolean {
