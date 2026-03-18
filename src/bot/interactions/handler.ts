@@ -733,8 +733,8 @@ async function handleGiveUp(interaction: ButtonInteraction, puzzleId: number): P
 }
 
 /**
- * Update the original /random embed message to show completed or given-up status.
- * Removes interactive buttons and marks the game as closed.
+ * Update the original /random embed message to add a scoreboard entry.
+ * Keeps buttons and embed intact so other players can still play.
  */
 async function updateOriginalMessage(
   interaction: ButtonInteraction,
@@ -754,52 +754,50 @@ async function updateOriginalMessage(
     const message = await channel.messages.fetch(msgRef.messageId);
     if (!message) return;
 
-    const startName = playerGraph.getPlayerNameWithFlag(game.startPlayerId);
-    const endName = playerGraph.getPlayerNameWithFlag(game.endPlayerId);
-
-    // Grab difficulty info from the original embed if available
     const originalEmbed = message.embeds[0];
-    const originalDesc = originalEmbed?.description ?? '';
+    if (!originalEmbed) return;
 
-    let statusEmoji: string;
-    let statusLabel: string;
-    let color: number;
-    let statusLine: string;
-
+    // Build the new scoreboard line
+    let scoreLine: string;
     if (status === 'completed' && pathLength != null && optimalLength != null) {
       const par = calculatePar(optimalLength);
       const scoreToPar = pathLength - par;
       const { rating: golfRating, emoji: golfEmoji } = getGolfRating(scoreToPar);
       const scoreStr = formatScoreToPar(scoreToPar);
-      statusEmoji = golfEmoji;
-      statusLabel = `${golfRating} (${scoreStr})`;
-      color = scoreToPar <= 0 ? 0x57F287 : scoreToPar <= 1 ? 0xFEE75C : 0xED4245;
-      statusLine = `${golfEmoji} **${interaction.user.displayName}** — **${pathLength}** steps (Par ${par} | Shortest ${optimalLength})`;
+      scoreLine = `${golfEmoji} **${interaction.user.displayName}** — ${golfRating} (${scoreStr}) | ${pathLength} steps`;
     } else if (status === 'completed') {
-      statusEmoji = '\u2705';
-      statusLabel = 'Completed';
-      color = 0x57F287;
-      statusLine = `**${interaction.user.displayName}** completed this puzzle`;
+      scoreLine = `\u2705 **${interaction.user.displayName}** — Completed`;
     } else {
-      statusEmoji = '\uD83D\uDEA9';
-      statusLabel = 'Given Up';
-      color = 0xED4245;
-      statusLine = `**${interaction.user.displayName}** gave up on this puzzle`;
+      scoreLine = `\uD83D\uDEA9 **${interaction.user.displayName}** — Gave up`;
     }
 
-    const embed = new EmbedBuilder()
-      .setTitle(`\u26F3 Pro2Pro — ${statusEmoji} ${statusLabel}`)
-      .setDescription(
-        `${startName}  \u2192  ???  \u2192  ${endName}\n\n` +
-        statusLine
-      )
-      .setColor(color);
+    // Append scoreboard to existing embed description
+    let desc = originalEmbed.description ?? '';
 
-    await message.edit({ embeds: [embed], components: [] });
+    // Check if scoreboard section already exists
+    const scoreboardHeader = '\n\n\uD83D\uDCCA **Scoreboard:**';
+    if (!desc.includes('\uD83D\uDCCA **Scoreboard:**')) {
+      desc += scoreboardHeader;
+    }
+    desc += `\n${scoreLine}`;
+
+    // Truncate if approaching Discord's 4096 char limit
+    if (desc.length > 3900) {
+      const headerIdx = desc.indexOf(scoreboardHeader);
+      if (headerIdx >= 0) {
+        const lines = desc.slice(headerIdx + scoreboardHeader.length).split('\n').filter(Boolean);
+        // Keep last 10 entries
+        const trimmed = lines.slice(-10).join('\n');
+        desc = desc.slice(0, headerIdx) + scoreboardHeader + '\n' + trimmed;
+      }
+    }
+
+    const updatedEmbed = EmbedBuilder.from(originalEmbed).setDescription(desc);
+
+    // Keep the original buttons intact — don't remove components
+    await message.edit({ embeds: [updatedEmbed], components: message.components as any });
   } catch (err) {
-    // Silently fail — message may have been deleted or permissions changed
     console.warn('[Handler] Could not update original message:', err);
-  } finally {
-    originalMessages.delete(msgKey);
   }
+  // Do NOT delete originalMessages — keep the ref so future players can also update the scoreboard
 }
