@@ -432,6 +432,11 @@ export class PlayerGraph {
       const bTeams = this.playerTeamNames.get(b.id)?.length ?? 0;
       if (aTeams !== bTeams) return bTeams - aTeams;
 
+      // Total roster entries — tiebreaker for same-name duplicates (e.g. CN vs US Summer)
+      const aRosters = this.getTotalRosterCount(a.id);
+      const bRosters = this.getTotalRosterCount(b.id);
+      if (aRosters !== bRosters) return bRosters - aRosters;
+
       return aName.localeCompare(bName);
     });
 
