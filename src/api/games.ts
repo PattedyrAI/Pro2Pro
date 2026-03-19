@@ -69,7 +69,7 @@ router.post('/start', authOptional, async (req, res) => {
     if (pool.length < 20) pool = playerGraph.getNotablePlayerIds();
 
     // More attempts for harder difficulties since long paths between famous players are rarer
-    const maxAttempts = difficulty === 'hard' ? 1500 : difficulty === 'medium' ? 400 : 200;
+    const maxAttempts = difficulty === 'insane' ? 3000 : difficulty === 'hard' ? 1500 : difficulty === 'medium' ? 400 : 200;
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const startId = pool[Math.floor(Math.random() * pool.length)];
       const endId = pool[Math.floor(Math.random() * pool.length)];
@@ -82,6 +82,11 @@ router.post('/start', authOptional, async (req, res) => {
       if (difficulty === 'hard') {
         const obscurity = playerGraph.getPathObscurityScore(result.path);
         if (obscurity < 0.3) continue; // reject paths that are too "obvious"
+      }
+
+      // For insane mode, require multi-team links — no team used in consecutive links
+      if (difficulty === 'insane') {
+        if (!playerGraph.hasMultiTeamLinks(result.path)) continue;
       }
 
       const numPaths = countShortestPaths(startId, endId);

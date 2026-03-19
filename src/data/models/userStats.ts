@@ -273,12 +273,16 @@ export function getUserRegionStats(userId: string): RegionStat[] {
 }
 
 export function recordGiveUp(userId: string, gameMode: 'daily' | 'custom' | 'random'): void {
+  if (!ALLOWED_GAME_MODES.has(gameMode)) return;
   const db = getDb();
   // Ensure the row exists
   getUserAllStats(userId);
 
+  const playedCol = `${gameMode}_played`;
   db.prepare(`
-    UPDATE user_all_stats SET games_given_up = games_given_up + 1
+    UPDATE user_all_stats SET
+      games_given_up = games_given_up + 1,
+      ${playedCol} = ${playedCol} + 1
     WHERE discord_user_id = ?
   `).run(userId);
 

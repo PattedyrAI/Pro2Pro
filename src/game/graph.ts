@@ -294,6 +294,30 @@ export class PlayerGraph {
   }
 
   /**
+   * Check if a path has diverse team connections — no team used in consecutive links.
+   * For "Insane" mode: forces paths like NiKo→rain (FaZe) → fox (G2) → Mutiris (Portuguese team)
+   * instead of boring single-team chains where everyone just played on the same org.
+   */
+  hasMultiTeamLinks(path: number[]): boolean {
+    if (path.length < 3) return true; // 2-step path can't have consecutive links
+
+    for (let i = 0; i < path.length - 2; i++) {
+      // Get team IDs for link i→i+1 and link i+1→i+2
+      const teamsA = new Set(this.adjacency.get(path[i])?.get(path[i + 1]) ?? []);
+      const teamsB = new Set(this.adjacency.get(path[i + 1])?.get(path[i + 2]) ?? []);
+
+      // Check if ANY team appears in both consecutive links
+      let overlap = false;
+      for (const t of teamsA) {
+        if (teamsB.has(t)) { overlap = true; break; }
+      }
+      // If they share a team, the path isn't diverse enough
+      if (overlap) return false;
+    }
+    return true;
+  }
+
+  /**
    * Score how "obscure" a path is. Higher = more obscure.
    * Considers: weak links (few shared teams) and non-famous intermediate players.
    * Returns a score from 0 (well-known links) to 1 (very obscure).

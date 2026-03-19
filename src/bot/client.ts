@@ -57,6 +57,7 @@ export async function registerCommands(): Promise<void> {
             { name: '🟢 Easy — Famous players, many paths', value: 'easy' },
             { name: '🟡 Medium — Notable players, moderate paths', value: 'medium' },
             { name: '🔴 Hard — All players, fewer paths', value: 'hard' },
+            { name: '💀 Insane — Multi-team links, no single-org chains', value: 'insane' },
           )
       ),
 

@@ -33,6 +33,7 @@ export const config = {
     easy:   { pool: 'famous' as const, minPaths: 5, minPath: 2, maxPath: 3, label: 'Easy',   emoji: '🟢' },
     medium: { pool: 'famous' as const, minPaths: 3, minPath: 3, maxPath: 4, label: 'Medium', emoji: '🟡' },
     hard:   { pool: 'famous' as const, minPaths: 2, minPath: 4, maxPath: 6, label: 'Hard',   emoji: '🔴' },
+    insane: { pool: 'famous' as const, minPaths: 1, minPath: 4, maxPath: 7, label: 'Insane', emoji: '💀' },
   },
 
   // Difficulty rotation: cycles through medium and hard only (no expert for dailies)

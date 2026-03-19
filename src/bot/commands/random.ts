@@ -6,11 +6,12 @@ import { config } from '../../config';
 import { originalMessages } from '../interactions/gameState';
 import { calculatePar } from '../../game/scorer';
 
-const difficultyColors = {
+const difficultyColors: Record<string, number> = {
   easy: 0x57F287,
   medium: 0xFEE75C,
   hard: 0xED4245,
-} as const;
+  insane: 0x9B59B6,
+};
 
 export async function handleRandom(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply();
@@ -28,7 +29,7 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
   }
 
   // More attempts for harder difficulties since long paths between famous players are rarer
-  const maxAttempts = difficultyKey === 'hard' ? 1500 : difficultyKey === 'medium' ? 400 : 200;
+  const maxAttempts = difficultyKey === 'insane' ? 3000 : difficultyKey === 'hard' ? 1500 : difficultyKey === 'medium' ? 400 : 200;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const startId = pool[Math.floor(Math.random() * pool.length)];
     const endId = pool[Math.floor(Math.random() * pool.length)];
@@ -44,6 +45,11 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
     if (difficultyKey === 'hard') {
       const obscurity = playerGraph.getPathObscurityScore(result.path);
       if (obscurity < 0.3) continue; // reject paths that are too "obvious"
+    }
+
+    // For insane mode, require multi-team links — no team used in consecutive links
+    if (difficultyKey === 'insane') {
+      if (!playerGraph.hasMultiTeamLinks(result.path)) continue;
     }
 
     const player1 = playerGraph.getPlayer(startId);
