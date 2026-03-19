@@ -70,9 +70,15 @@ function buildProgressOpts(game: import('./gameState').GameState): Parameters<ty
   } else {
     const { getDb } = require('../../data/db');
     const db = getDb();
-    const customGame = db.prepare('SELECT optimal_path_length FROM custom_games WHERE id = ?').get(game.puzzleId) as any;
+    const customGame = db.prepare('SELECT optimal_path_length, difficulty FROM custom_games WHERE id = ?').get(game.puzzleId) as any;
     if (customGame) {
       opts.optimalLength = customGame.optimal_path_length;
+      const diff = (customGame.difficulty ?? 'medium') as keyof typeof config.randomDifficulty;
+      const randomTier = config.randomDifficulty[diff];
+      if (randomTier) {
+        opts.difficulty = `${randomTier.emoji} ${randomTier.label}`;
+        opts.difficultyStars = 0;
+      }
     }
   }
 
@@ -464,11 +470,17 @@ async function completeGame(interaction: ButtonInteraction, game: import('./game
     const shortest = findShortestPath(game.startPlayerId, game.endPlayerId);
     optimalLength = shortest?.length ?? pathLength;
 
-    // Look up game_mode from custom_games table
+    // Look up game_mode and difficulty from custom_games table
     const { getDb } = require('../../data/db');
     const cgDb = getDb();
-    const customGameRow = cgDb.prepare('SELECT game_mode FROM custom_games WHERE id = ?').get(game.puzzleId) as { game_mode: string } | undefined;
+    const customGameRow = cgDb.prepare('SELECT game_mode, difficulty FROM custom_games WHERE id = ?').get(game.puzzleId) as { game_mode: string; difficulty: string | null } | undefined;
     const gameMode = (customGameRow?.game_mode === 'random' ? 'random' : 'custom') as 'custom' | 'random';
+    const gameDiff = (customGameRow?.difficulty ?? 'medium') as keyof typeof config.randomDifficulty;
+    const randomTier = config.randomDifficulty[gameDiff];
+    if (randomTier) {
+      difficulty = `${randomTier.emoji} ${randomTier.label}`;
+      difficultyStars = 0;
+    }
 
     saveCustomGameAttempt({
       customGameId: game.puzzleId,

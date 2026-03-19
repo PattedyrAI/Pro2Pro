@@ -173,8 +173,9 @@ export function createProgressEmbed(opts: {
       pathDisplay + '\n\n' +
       `Steps so far: **${stepCount}**` + parLine;
   } else {
+    const diffLine = opts.difficulty ? `${opts.difficulty}\n\n` : '';
     title = `\u26F3 Pro2Pro Custom Game`;
-    description = pathDisplay + '\n\n' + `Steps so far: **${stepCount}**` + parLine;
+    description = diffLine + pathDisplay + '\n\n' + `Steps so far: **${stepCount}**` + parLine;
   }
 
   const embed = new EmbedBuilder()
