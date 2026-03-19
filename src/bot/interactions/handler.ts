@@ -11,6 +11,7 @@ import { handlePro2Pro } from '../commands/pro2pro';
 import { handleCustom, handleAutocomplete } from '../commands/custom';
 import { handleRandom } from '../commands/random';
 import { handleStats } from '../commands/stats';
+import { handleActiveGames } from '../commands/activegames';
 import { activeGames, getGameKey, getFullPath, givenUpGames, originalMessages } from './gameState';
 import { playerGraph } from '../../game/graph';
 import { validateLink } from '../../game/validator';
@@ -32,7 +33,7 @@ import {
  * Find an active game for a user, checking both daily and custom keys.
  */
 function findActiveGame(userId: string, puzzleId: number): import('./gameState').GameState | undefined {
-  // Try daily first
+  // Try daily first (exact puzzleId match only)
   const dailyKey = getGameKey('daily', userId);
   const daily = activeGames.get(dailyKey);
   if (daily && daily.puzzleId === puzzleId) return daily;
@@ -41,9 +42,6 @@ function findActiveGame(userId: string, puzzleId: number): import('./gameState')
   const customKey = getGameKey('custom', userId, puzzleId);
   const custom = activeGames.get(customKey);
   if (custom) return custom;
-
-  // Fallback: check daily even if puzzleId doesn't match (buttons may have stale IDs)
-  if (daily) return daily;
 
   return undefined;
 }
@@ -95,6 +93,9 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
           break;
         case 'stats':
           await handleStats(interaction);
+          break;
+        case 'activegames':
+          await handleActiveGames(interaction);
           break;
       }
     } else if (interaction.isAutocomplete()) {
@@ -210,7 +211,8 @@ async function handleButton(interaction: ButtonInteraction): Promise<void> {
     }
 
     case 'game_share': {
-      const shareText = activeGames.get(`share:${interaction.user.id}`) as unknown as string;
+      const { getShareText } = require('./gameState');
+      const shareText = getShareText(interaction.user.id);
       if (shareText) {
         await interaction.reply({ content: shareText });
       } else {
@@ -370,6 +372,10 @@ async function handlePlayerSelect(
     game.backwardPath.push(playerId);
   }
 
+  // Persist updated state to DB (SQLite returns copies, not references)
+  const gameKey = getGameKey(gameType, interaction.user.id, gameType === 'custom' ? puzzleId : undefined);
+  activeGames.set(gameKey, game);
+
   const teamNames = validation.sharedTeams.map(t => t.teamAcronym ?? t.teamName).join(', ');
   const selectedName = playerGraph.getPlayerNameWithFlag(playerId);
 
@@ -500,7 +506,8 @@ async function completeGame(interaction: ButtonInteraction, game: import('./game
   );
 
   // Store share text temporarily
-  activeGames.set(`share:${interaction.user.id}`, shareText as any);
+  const { setShareText } = require('./gameState');
+  setShareText(interaction.user.id, shareText);
 
   // Clean up game state
   const gameKey = getGameKey(game.type, interaction.user.id, game.type === 'custom' ? game.puzzleId : undefined);
@@ -616,6 +623,10 @@ async function handleUndo(interaction: ButtonInteraction, puzzleId: number, dire
   const chain = undoChain === 'forward' ? game.forwardPath : game.backwardPath;
   const removed = chain.pop()!;
   const removedName = playerGraph.getPlayerNameWithFlag(removed);
+
+  // Persist updated state after undo
+  const undoGameKey = getGameKey(game.type, interaction.user.id, game.type === 'custom' ? game.puzzleId : undefined);
+  activeGames.set(undoGameKey, game);
 
   // Back to initial state for daily games — show the puzzle embed
   if (game.type === 'daily' && game.forwardPath.length === 1 && game.backwardPath.length === 1) {

@@ -61,6 +61,10 @@ export async function registerCommands(): Promise<void> {
       ),
 
     new SlashCommandBuilder()
+      .setName('activegames')
+      .setDescription('View your active Pro2Pro games — continue or give up'),
+
+    new SlashCommandBuilder()
       .setName('custom')
       .setDescription('Start a custom Pro2Pro game between two players')
       .addStringOption(opt =>

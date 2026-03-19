@@ -264,6 +264,20 @@ function runMigrations(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_web_game_sessions_user ON web_game_sessions(user_id);
   `);
+
+  // Persistent bot game sessions (survives redeploys, enables /activegames and cross-device)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS bot_game_sessions (
+      game_key TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      game_type TEXT NOT NULL,
+      puzzle_id INTEGER NOT NULL,
+      game_state TEXT NOT NULL,
+      last_activity INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_bot_game_sessions_user ON bot_game_sessions(user_id);
+  `);
 }
 
 export function closeDb(): void {
