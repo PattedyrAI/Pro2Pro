@@ -28,7 +28,7 @@ async function main(): Promise<void> {
   // Initial data sync (if DB is empty) or full re-sync if --resync flag is passed
   const db = getDb();
   const playerCount = (db.prepare('SELECT COUNT(*) as count FROM players').get() as any).count;
-  const forceResync = process.argv.includes('--resync');
+  const forceResync = process.argv.includes('--resync') || process.env.FORCE_RESYNC === 'true';
 
   if (forceResync) {
     console.log('[Pro2Pro] --resync flag detected. Clearing roster data and re-syncing from scratch...');

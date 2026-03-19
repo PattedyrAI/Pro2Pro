@@ -11,7 +11,7 @@ export function startApiServer(): void {
   const app = express();
 
   app.use(cors({
-    origin: config.frontendUrl,
+    origin: [config.frontendUrl, 'https://pattedyret.github.io', 'http://localhost:5173'],
     credentials: true,
   }));
   app.use(express.json());
