@@ -8,6 +8,7 @@ import {
   EmbedBuilder,
 } from 'discord.js';
 import { handlePro2Pro } from '../commands/pro2pro';
+import { handleAdmin } from '../commands/admin';
 import { handleCustom, handleAutocomplete } from '../commands/custom';
 import { handleRandom } from '../commands/random';
 import { handleStats } from '../commands/stats';
@@ -96,6 +97,9 @@ export async function handleInteraction(interaction: Interaction): Promise<void>
           break;
         case 'activegames':
           await handleActiveGames(interaction);
+          break;
+        case 'admin':
+          await handleAdmin(interaction);
           break;
       }
     } else if (interaction.isAutocomplete()) {

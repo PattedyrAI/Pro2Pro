@@ -4,6 +4,7 @@ export const config = {
   // Discord
   discordToken: process.env.DISCORD_TOKEN!,
   clientId: process.env.CLIENT_ID || '1480857828091625534',
+  adminUserId: process.env.ADMIN_USER_ID || '',
 
   // PandaScore
   pandaScoreApiKey: process.env.PANDASCORE_API_KEY!,

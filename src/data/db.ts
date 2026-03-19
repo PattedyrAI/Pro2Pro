@@ -256,6 +256,10 @@ function runMigrations(db: Database.Database): void {
   // Add difficulty column to custom_games (for insane mode enforcement during play)
   try { db.exec(`ALTER TABLE custom_games ADD COLUMN difficulty TEXT DEFAULT NULL`); } catch (_) {}
 
+  // Add tier column to rosters — filters out low-quality PandaScore connections
+  // Values: 'a_plus', 'b_plus', 'cct', 'other', or NULL (current-roster rows / pre-migration)
+  try { db.exec(`ALTER TABLE rosters ADD COLUMN tier TEXT DEFAULT NULL`); } catch (_) {}
+
   // Persistent web game sessions (survives server restarts/redeploys)
   db.exec(`
     CREATE TABLE IF NOT EXISTS web_game_sessions (

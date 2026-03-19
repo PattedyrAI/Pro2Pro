@@ -66,6 +66,13 @@ export async function registerCommands(): Promise<void> {
       .setDescription('View your active Pro2Pro games — continue or give up'),
 
     new SlashCommandBuilder()
+      .setName('admin')
+      .setDescription('Admin commands')
+      .addSubcommand(sub =>
+        sub.setName('resync').setDescription('Clear and re-sync all roster data from PandaScore')
+      ),
+
+    new SlashCommandBuilder()
       .setName('custom')
       .setDescription('Start a custom Pro2Pro game between two players')
       .addStringOption(opt =>

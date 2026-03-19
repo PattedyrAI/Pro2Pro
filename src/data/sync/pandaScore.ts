@@ -144,7 +144,7 @@ export class PandaScoreSync {
     `);
 
     const insertRoster = db.prepare(`
-      INSERT OR IGNORE INTO rosters (player_id, team_id, tournament_id) VALUES (?, ?, ?)
+      INSERT OR IGNORE INTO rosters (player_id, team_id, tournament_id, tier) VALUES (?, ?, ?, ?)
     `);
 
     const markFemale = db.prepare(`UPDATE players SET is_female = 1 WHERE id = ?`);
@@ -198,7 +198,7 @@ export class PandaScoreSync {
               player.nationality ?? null,
               player.image_url ?? null
             );
-            insertRoster.run(player.id, team.id, null);
+            insertRoster.run(player.id, team.id, null, null);
             playerCount++;
             rosterCount++;
           }
@@ -266,8 +266,9 @@ export class PandaScoreSync {
               player.image_url ?? null
             );
 
-            // Historical roster connection with tournament_id
-            insertRoster.run(player.id, team.id, tournament.id ?? null);
+            // Historical roster connection with tournament_id and tier
+            const tierStr = tier.aPlus ? 'a_plus' : tier.bPlus ? 'b_plus' : tier.cct ? 'cct' : 'other';
+            insertRoster.run(player.id, team.id, tournament.id ?? null, tierStr);
             tournamentRosters++;
 
             // Track tier counts per player

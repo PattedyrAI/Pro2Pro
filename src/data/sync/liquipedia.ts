@@ -316,8 +316,8 @@ export class LiquipediaSync {
       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
     `);
     const insertRoster = db.prepare(`
-      INSERT OR IGNORE INTO rosters (player_id, team_id, tournament_id)
-      VALUES (?, ?, ?)
+      INSERT OR IGNORE INTO rosters (player_id, team_id, tournament_id, tier)
+      VALUES (?, ?, ?, 'b_plus')
     `);
 
     // Fast player lookup using in-memory index

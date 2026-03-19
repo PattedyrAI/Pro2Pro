@@ -142,9 +142,13 @@ export class PlayerGraph {
     // Current active rosters (tournament_id = NULL) are grouped together per team.
     this.adjacency.clear();
 
-    const rosterRows = db.prepare(
-      'SELECT player_id, team_id, tournament_id FROM rosters ORDER BY team_id, tournament_id'
-    ).all() as any[];
+    const rosterRows = db.prepare(`
+      SELECT player_id, team_id, tournament_id FROM rosters
+      WHERE tournament_id IS NULL
+         OR tier IN ('a_plus', 'b_plus')
+         OR tier IS NULL
+      ORDER BY team_id, tournament_id
+    `).all() as any[];
 
     const groupPlayers = new Map<string, number[]>();
     for (const row of rosterRows) {
