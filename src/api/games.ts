@@ -2,7 +2,7 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import { getDb } from '../data/db';
 import { playerGraph } from '../game/graph';
-import { findShortestPath, countShortestPaths, findAllShortestPaths } from '../game/pathfinder';
+import { findShortestPath, countShortestPaths, findAllShortestPaths, findMultiTeamPath } from '../game/pathfinder';
 import { validateLink } from '../game/validator';
 import { getPuzzleByNumber, getTodayPuzzle, getPuzzleById } from '../data/models/puzzle';
 import { getUserAttempt, saveUserAttempt, getUserStats } from '../data/models/userStats';
@@ -84,9 +84,10 @@ router.post('/start', authOptional, async (req, res) => {
         if (obscurity < 0.3) continue; // reject paths that are too "obvious"
       }
 
-      // For insane mode, require multi-team links — no team used in consecutive links
+      // For insane mode, verify a multi-team path actually exists
       if (difficulty === 'insane') {
-        if (!playerGraph.hasMultiTeamLinks(result.path)) continue;
+        const mtPath = findMultiTeamPath(startId, endId, tier.maxPath);
+        if (!mtPath) continue;
       }
 
       const numPaths = countShortestPaths(startId, endId);
@@ -94,9 +95,9 @@ router.post('/start', authOptional, async (req, res) => {
 
       const db = getDb();
       const insertResult = db.prepare(`
-        INSERT INTO custom_games (discord_user_id, guild_id, channel_id, start_player_id, end_player_id, optimal_path_length, num_valid_paths, is_feasible)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-      `).run(userId, '', 'web', startId, endId, result.length, numPaths);
+        INSERT INTO custom_games (discord_user_id, guild_id, channel_id, start_player_id, end_player_id, optimal_path_length, num_valid_paths, is_feasible, difficulty)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+      `).run(userId, '', 'web', startId, endId, result.length, numPaths, difficulty ?? 'medium');
 
       const gameId = Number(insertResult.lastInsertRowid);
       const sessionId = crypto.randomUUID();
@@ -109,6 +110,7 @@ router.post('/start', authOptional, async (req, res) => {
         searchDirection: 'forward',
         startPlayerId: startId,
         endPlayerId: endId,
+        difficulty: difficulty ?? 'medium',
       });
 
       const startPlayer = playerGraph.getPlayer(startId);
@@ -209,6 +211,14 @@ router.post('/:sessionId/guess', authOptional, (req, res) => {
   if (game.forwardPath.includes(playerId) || game.backwardPath.includes(playerId)) {
     res.json({ valid: false, error: `${playerGraph.getPlayer(playerId)?.name} is already in your path` });
     return;
+  }
+
+  // Insane mode: enforce multi-team rule
+  if (game.difficulty === 'insane') {
+    if (playerGraph.wouldRepeatTeam(chain, playerId)) {
+      res.json({ valid: false, error: `Insane mode: you can't connect through the same team twice in a row! Find a different route.` });
+      return;
+    }
   }
 
   // Add to chain

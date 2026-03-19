@@ -284,6 +284,12 @@ export class PlayerGraph {
     });
   }
 
+  /** Get raw shared team IDs between two players (deduplicated). */
+  getSharedTeamIds(playerA: number, playerB: number): number[] {
+    const teamIds = this.adjacency.get(playerA)?.get(playerB) ?? [];
+    return [...new Set(teamIds)];
+  }
+
   /**
    * Get the number of shared teams between two connected players.
    * Returns 0 if they are not connected.
@@ -291,6 +297,28 @@ export class PlayerGraph {
   getSharedTeamCount(playerA: number, playerB: number): number {
     const teamIds = this.adjacency.get(playerA)?.get(playerB) ?? [];
     return new Set(teamIds).size;
+  }
+
+  /**
+   * Check if adding a new player to a chain violates the multi-team rule.
+   * Returns true if the new link shares ANY team with the previous link.
+   * Used to enforce insane mode during gameplay.
+   */
+  wouldRepeatTeam(chain: number[], newPlayerId: number): boolean {
+    if (chain.length < 2) return false; // no previous link to compare against
+
+    const prevPlayer = chain[chain.length - 2];
+    const lastPlayer = chain[chain.length - 1];
+
+    // Teams used in the previous link (second-to-last → last)
+    const prevTeams = new Set(this.adjacency.get(prevPlayer)?.get(lastPlayer) ?? []);
+    // Teams that would be used in the new link (last → new)
+    const newTeams = new Set(this.adjacency.get(lastPlayer)?.get(newPlayerId) ?? []);
+
+    for (const t of prevTeams) {
+      if (newTeams.has(t)) return true;
+    }
+    return false;
   }
 
   /**

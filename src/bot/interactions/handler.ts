@@ -331,6 +331,7 @@ async function handlePlayerSelect(
         searchDirection: direction,
         startPlayerId: customGame.start_player_id,
         endPlayerId: customGame.end_player_id,
+        difficulty: customGame.difficulty ?? undefined,
       };
       activeGames.set(gameKey, game);
     }
@@ -363,6 +364,21 @@ async function handlePlayerSelect(
       components: dupRows,
     });
     return;
+  }
+
+  // Insane mode: enforce multi-team rule — no team reused in consecutive links
+  if (game.difficulty === 'insane') {
+    const activeChain = direction === 'forward' ? game.forwardPath : game.backwardPath;
+    if (playerGraph.wouldRepeatTeam(activeChain, playerId)) {
+      const progressOpts = buildProgressOpts(game);
+      const { embed, rows } = createProgressEmbed(progressOpts);
+      await interaction.update({
+        content: `\u274C **Insane mode:** You can't connect through the same team twice in a row! **${playerGraph.getPlayerNameWithFlag(playerId)}** shares a team with the previous link. Find a different route.`,
+        embeds: [embed],
+        components: rows,
+      });
+      return;
+    }
   }
 
   // Add to the appropriate chain

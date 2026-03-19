@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { playerGraph } from '../../game/graph';
-import { findShortestPath, countShortestPaths } from '../../game/pathfinder';
+import { findShortestPath, countShortestPaths, findMultiTeamPath } from '../../game/pathfinder';
 import { getDb } from '../../data/db';
 import { config } from '../../config';
 import { originalMessages } from '../interactions/gameState';
@@ -47,9 +47,10 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
       if (obscurity < 0.3) continue; // reject paths that are too "obvious"
     }
 
-    // For insane mode, require multi-team links — no team used in consecutive links
+    // For insane mode, verify a multi-team path actually exists (feasibility check)
     if (difficultyKey === 'insane') {
-      if (!playerGraph.hasMultiTeamLinks(result.path)) continue;
+      const mtPath = findMultiTeamPath(startId, endId, tier.maxPath);
+      if (!mtPath) continue; // no feasible multi-team path within depth limit
     }
 
     const player1 = playerGraph.getPlayer(startId);
@@ -64,8 +65,8 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
     // Save as custom game
     const db = getDb();
     const insertResult = db.prepare(`
-      INSERT INTO custom_games (discord_user_id, guild_id, channel_id, start_player_id, end_player_id, optimal_path_length, num_valid_paths, is_feasible, game_mode)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'random')
+      INSERT INTO custom_games (discord_user_id, guild_id, channel_id, start_player_id, end_player_id, optimal_path_length, num_valid_paths, is_feasible, game_mode, difficulty)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'random', ?)
     `).run(
       interaction.user.id,
       interaction.guildId ?? '',
@@ -73,7 +74,8 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
       startId,
       endId,
       result.length,
-      numPaths
+      numPaths,
+      difficultyKey
     );
 
     const customGameId = Number(insertResult.lastInsertRowid);

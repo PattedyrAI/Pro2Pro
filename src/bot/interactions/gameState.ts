@@ -11,6 +11,7 @@ export interface GameState {
   searchDirection: 'forward' | 'backward';
   startPlayerId: number;
   endPlayerId: number;
+  difficulty?: string;      // 'easy' | 'medium' | 'hard' | 'insane' — for enforcing rules during play
 }
 
 // TTLs for auto-expiry

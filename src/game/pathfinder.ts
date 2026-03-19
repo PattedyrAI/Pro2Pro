@@ -83,6 +83,58 @@ export function countShortestPaths(startId: number, endId: number): number {
 }
 
 /**
+ * Find a path between two players where no team is reused in consecutive links.
+ * Uses DFS with depth limit. Returns null if no multi-team path exists within maxDepth.
+ */
+export function findMultiTeamPath(
+  startId: number,
+  endId: number,
+  maxDepth: number
+): PathResult | null {
+  let bestPath: number[] | null = null;
+
+  function dfs(current: number, path: number[], visited: Set<number>, prevTeams: Set<number>): void {
+    if (bestPath && path.length >= bestPath.length) return; // prune if already found shorter
+    if (path.length - 1 > maxDepth) return;
+
+    if (current === endId) {
+      bestPath = [...path];
+      return;
+    }
+
+    for (const neighbor of playerGraph.getNeighbors(current)) {
+      if (visited.has(neighbor)) continue;
+
+      // Get teams for this edge
+      const edgeTeams = playerGraph.getSharedTeamIds(current, neighbor);
+      if (!edgeTeams || edgeTeams.length === 0) continue;
+
+      // Check multi-team constraint: no team overlap with previous link
+      if (prevTeams.size > 0) {
+        const hasNewTeam = edgeTeams.some(t => !prevTeams.has(t));
+        if (!hasNewTeam) continue; // all teams overlap with previous link
+      }
+
+      visited.add(neighbor);
+      path.push(neighbor);
+      const newPrevTeams = new Set(edgeTeams);
+      dfs(neighbor, path, visited, newPrevTeams);
+      path.pop();
+      visited.delete(neighbor);
+
+      if (bestPath) return; // found one, stop early
+    }
+  }
+
+  const visited = new Set<number>([startId]);
+  dfs(startId, [startId], visited, new Set());
+
+  if (!bestPath) return null;
+  const finalPath = bestPath as number[];
+  return { path: finalPath, length: finalPath.length - 1 };
+}
+
+/**
  * Find all shortest paths between two players (up to a limit).
  * Returns an array of paths, each being an array of player IDs.
  */
