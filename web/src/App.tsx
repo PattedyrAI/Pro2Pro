@@ -13,7 +13,7 @@ import { Profile } from './pages/Profile';
 
 export default function App() {
   return (
-    <BrowserRouter basename="/Pro2Pro">
+    <BrowserRouter>
       <AuthProvider>
         <Routes>
           <Route element={<Layout />}>

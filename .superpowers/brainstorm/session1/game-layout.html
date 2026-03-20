@@ -1,0 +1,165 @@
+<h2>Game Board Layout</h2>
+<p class="subtitle">How should the player chain be displayed during gameplay?</p>
+
+<div class="cards">
+  <!-- Option A: Horizontal Chain -->
+  <div class="card" data-choice="horizontal" onclick="toggleSelect(this)">
+    <div class="card-image" style="height:300px;overflow:hidden;border-radius:8px 8px 0 0;">
+      <div style="background:#111118;height:100%;padding:20px;font-family:system-ui;">
+        <div style="text-align:center;margin-bottom:12px;color:#888;font-size:11px;">Daily #42 · Hard</div>
+        <!-- Horizontal chain -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;overflow-x:auto;padding:12px 0;">
+          <!-- Start player -->
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="width:52px;height:52px;border-radius:50%;background:#1a2a1a;border:2px solid #4ade80;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;">
+              <span style="font-size:9px;color:#4ade80;">s1mple</span>
+            </div>
+          </div>
+          <!-- Link team badge -->
+          <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+            <div style="width:28px;height:1px;background:#f97316;"></div>
+            <div style="padding:2px 8px;border-radius:4px;background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.25);font-size:7px;color:#f97316;margin:4px 0;">NAVI</div>
+            <div style="width:28px;height:1px;background:#f97316;"></div>
+          </div>
+          <!-- Middle player -->
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="width:52px;height:52px;border-radius:50%;background:#1a1a2a;border:2px solid #f97316;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;">
+              <span style="font-size:8px;color:#f97316;">electro..</span>
+            </div>
+          </div>
+          <!-- Unknown gap -->
+          <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+            <div style="width:28px;height:1px;background:#333;"></div>
+            <div style="font-size:12px;color:#444;margin:4px 0;">?</div>
+            <div style="width:28px;height:1px;background:#333;"></div>
+          </div>
+          <!-- End player -->
+          <div style="text-align:center;flex-shrink:0;">
+            <div style="width:52px;height:52px;border-radius:50%;background:#2a1a1a;border:2px solid #ef4444;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;">
+              <span style="font-size:9px;color:#ef4444;">ZywOo</span>
+            </div>
+          </div>
+        </div>
+        <!-- Search bar -->
+        <div style="max-width:280px;margin:16px auto 0;">
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#555;font-size:12px;">Search player...</div>
+        </div>
+        <div style="text-align:center;margin-top:12px;display:flex;gap:12px;justify-content:center;">
+          <span style="font-size:10px;color:#888;">Par: <span style="color:#f97316;">4</span></span>
+          <span style="font-size:10px;color:#888;">Optimal: <span style="color:#f97316;">2</span></span>
+          <span style="font-size:10px;color:#888;">Steps: <span style="color:#fff;">1</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Horizontal Chain</h3>
+      <p>Players flow left-to-right with team badges between them. Natural reading order. Can get cramped with long paths on mobile.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Vertical Chain -->
+  <div class="card" data-choice="vertical" onclick="toggleSelect(this)">
+    <div class="card-image" style="height:300px;overflow:hidden;border-radius:8px 8px 0 0;">
+      <div style="background:#111118;height:100%;padding:16px;font-family:system-ui;">
+        <div style="text-align:center;margin-bottom:10px;color:#888;font-size:11px;">Daily #42 · Hard</div>
+        <div style="display:flex;gap:16px;height:220px;">
+          <!-- Left: vertical chain -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;overflow:auto;">
+            <!-- Start -->
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:10px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.25);width:100%;">
+              <div style="width:32px;height:32px;border-radius:50%;background:#1a2a1a;border:2px solid #4ade80;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:#4ade80;">IMG</div>
+              <div>
+                <div style="font-size:11px;color:#4ade80;font-weight:600;">s1mple</div>
+                <div style="font-size:8px;color:#666;">🇺🇦 Ukraine</div>
+              </div>
+            </div>
+            <!-- Team connector -->
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="width:1px;height:8px;background:#f97316;"></div>
+              <div style="padding:2px 8px;border-radius:4px;background:rgba(249,115,22,0.1);font-size:8px;color:#f97316;">NAVI</div>
+              <div style="width:1px;height:8px;background:#f97316;"></div>
+            </div>
+            <!-- Middle player -->
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:10px;background:rgba(249,115,22,0.06);border:1px solid rgba(249,115,22,0.2);width:100%;">
+              <div style="width:32px;height:32px;border-radius:50%;background:#1a1a2a;border:2px solid #f97316;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:#f97316;">IMG</div>
+              <div>
+                <div style="font-size:11px;color:#f97316;font-weight:600;">electronic</div>
+                <div style="font-size:8px;color:#666;">🇷🇺 Russia</div>
+              </div>
+            </div>
+            <!-- Gap -->
+            <div style="color:#444;font-size:10px;padding:4px 0;">• • •</div>
+            <!-- End -->
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:10px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);width:100%;">
+              <div style="width:32px;height:32px;border-radius:50%;background:#2a1a1a;border:2px solid #ef4444;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:#ef4444;">IMG</div>
+              <div>
+                <div style="font-size:11px;color:#ef4444;font-weight:600;">ZywOo</div>
+                <div style="font-size:8px;color:#666;">🇫🇷 France</div>
+              </div>
+            </div>
+          </div>
+          <!-- Right: search + info -->
+          <div style="width:140px;display:flex;flex-direction:column;gap:8px;">
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px;color:#555;font-size:10px;">Search...</div>
+            <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:8px;">
+              <div style="font-size:9px;color:#888;margin-bottom:4px;">Stats</div>
+              <div style="font-size:10px;color:#f97316;">Par: 4</div>
+              <div style="font-size:10px;color:#ccc;">Steps: 1</div>
+              <div style="font-size:10px;color:#ccc;">Optimal: 2</div>
+            </div>
+            <div style="padding:6px;border-radius:6px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);text-align:center;font-size:9px;color:#ef4444;cursor:pointer;">Give Up</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Vertical Chain + Side Panel</h3>
+      <p>Chain flows top-to-bottom with player cards (photo, name, flag). Search and stats on the right. More room for player info. Great for desktop, stacks on mobile.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Center Stage -->
+  <div class="card" data-choice="center-stage" onclick="toggleSelect(this)">
+    <div class="card-image" style="height:300px;overflow:hidden;border-radius:8px 8px 0 0;">
+      <div style="background:#111118;height:100%;padding:16px;font-family:system-ui;">
+        <div style="text-align:center;margin-bottom:8px;color:#888;font-size:11px;">Daily #42 · Hard</div>
+        <!-- Start/End anchors at top -->
+        <div style="display:flex;justify-content:center;gap:40px;margin-bottom:12px;">
+          <div style="text-align:center;">
+            <div style="width:48px;height:48px;border-radius:50%;background:#1a2a1a;border:2px solid #4ade80;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#4ade80;">IMG</div>
+            <div style="font-size:10px;color:#4ade80;font-weight:600;">s1mple</div>
+            <div style="font-size:8px;color:#666;">Start</div>
+          </div>
+          <div style="display:flex;align-items:center;color:#333;font-size:18px;letter-spacing:4px;">· · ·</div>
+          <div style="text-align:center;">
+            <div style="width:48px;height:48px;border-radius:50%;background:#2a1a1a;border:2px solid #ef4444;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#ef4444;">IMG</div>
+            <div style="font-size:10px;color:#ef4444;font-weight:600;">ZywOo</div>
+            <div style="font-size:8px;color:#666;">Target</div>
+          </div>
+        </div>
+        <!-- Chain in center -->
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:10px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
+            <span style="padding:4px 10px;border-radius:6px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);font-size:10px;color:#4ade80;">s1mple</span>
+            <span style="font-size:8px;padding:2px 6px;border-radius:3px;background:rgba(249,115,22,0.12);color:#f97316;">NAVI</span>
+            <span style="padding:4px 10px;border-radius:6px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);font-size:10px;color:#f97316;">electronic</span>
+            <span style="color:#444;font-size:10px;">→ ?</span>
+          </div>
+        </div>
+        <!-- Stats row -->
+        <div style="display:flex;justify-content:center;gap:16px;margin-bottom:10px;">
+          <span style="font-size:10px;color:#888;">Par: <span style="color:#f97316;">4</span></span>
+          <span style="font-size:10px;color:#888;">Steps: <span style="color:#fff;">1/2</span></span>
+        </div>
+        <!-- Search -->
+        <div style="max-width:260px;margin:0 auto;">
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:#555;font-size:11px;">Search next player...</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Center Stage</h3>
+      <p>Start & end players anchored at top as "goal posts". Chain builds in the middle as a compact flow. Search below. Clean, focused on the puzzle. Mobile-friendly.</p>
+    </div>
+  </div>
+</div>

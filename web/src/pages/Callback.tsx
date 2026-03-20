@@ -15,7 +15,7 @@ export function Callback() {
       return;
     }
 
-    const redirectUri = `${window.location.origin}/Pro2Pro/callback`;
+    const redirectUri = `${window.location.origin}/callback`;
     login(code, redirectUri)
       .then(() => navigate('/daily', { replace: true }))
       .catch(err => setError(err.message || 'Login failed'));

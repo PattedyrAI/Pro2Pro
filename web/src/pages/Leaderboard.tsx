@@ -1,27 +1,18 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 
-interface Guild {
-  guild_id: string;
-  guild_name: string;
-  guild_icon: string | null;
+interface Guild { guild_id: string; guild_name: string; guild_icon: string | null; }
+interface LeaderboardEntry {
+  rank: number; userId: string; username: string;
+  totalPoints: number; gamesPlayed: number; gamesWon: number;
+  currentStreak: number; maxStreak: number; avgPathLength: number;
 }
 
-interface LeaderboardEntry {
-  rank: number;
-  userId: string;
-  username: string;
-  totalPoints: number;
-  gamesPlayed: number;
-  gamesWon: number;
-  currentStreak: number;
-  maxStreak: number;
-  avgPathLength: number;
-}
+const MEDALS = ['🥇', '🥈', '🥉'];
 
 export function Leaderboard() {
   const [guilds, setGuilds] = useState<Guild[]>([]);
-  const [selectedGuild, setSelectedGuild] = useState<string>('');
+  const [selectedGuild, setSelectedGuild] = useState('');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingBoard, setLoadingBoard] = useState(false);
@@ -30,9 +21,7 @@ export function Leaderboard() {
     api.guilds()
       .then(data => {
         setGuilds(data.guilds);
-        if (data.guilds.length > 0) {
-          setSelectedGuild(data.guilds[0].guild_id);
-        }
+        if (data.guilds.length > 0) setSelectedGuild(data.guilds[0].guild_id);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -47,82 +36,87 @@ export function Leaderboard() {
       .finally(() => setLoadingBoard(false));
   }, [selectedGuild]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-7 h-7 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
-  if (guilds.length === 0) {
-    return (
-      <div className="text-center py-20 text-gray-400">
-        <p>No shared servers found.</p>
-        <p className="text-sm mt-1">You and the Pro2Pro bot must share at least one Discord server.</p>
-      </div>
-    );
-  }
+  if (guilds.length === 0) return (
+    <div className="text-center py-24 max-w-sm mx-auto">
+      <div className="text-4xl mb-4">🏆</div>
+      <h2 className="text-xl font-bold text-white mb-2" style={{ fontFamily: 'Rajdhani, sans-serif' }}>No Servers Found</h2>
+      <p className="text-slate-500 text-sm">You and the Pro2Pro bot must share at least one Discord server.</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-white">Leaderboard</h1>
-      </div>
+    <div className="space-y-8 page-enter max-w-3xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-4xl font-bold text-white" style={{ fontFamily: 'Rajdhani, sans-serif' }}>Leaderboard</h1>
 
-      {/* Guild picker */}
-      <div className="flex justify-center">
         <select
           value={selectedGuild}
           onChange={e => setSelectedGuild(e.target.value)}
-          className="px-4 py-2 rounded-xl bg-gray-900 border border-orange-500/30 text-white focus:outline-none focus:border-orange-400"
+          className="px-4 py-2 rounded-xl bg-surface border border-white/[0.08] text-white text-sm focus:outline-none focus:border-orange-500/40 transition-colors appearance-none cursor-pointer"
         >
-          {guilds.map(g => (
-            <option key={g.guild_id} value={g.guild_id}>{g.guild_name}</option>
-          ))}
+          {guilds.map(g => <option key={g.guild_id} value={g.guild_id}>{g.guild_name}</option>)}
         </select>
       </div>
 
       {loadingBoard ? (
-        <div className="flex justify-center">
-          <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        <div className="flex justify-center py-16">
+          <div className="w-7 h-7 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : leaderboard.length === 0 ? (
-        <div className="text-center py-10 text-gray-400">No data yet for this server</div>
+        <div className="text-center py-16 text-slate-500">
+          <p>No games played in this server yet.</p>
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full max-w-3xl mx-auto">
-            <thead>
-              <tr className="text-xs text-gray-500 border-b border-gray-800">
-                <th className="py-3 px-2 text-left">#</th>
-                <th className="py-3 px-2 text-left">Player</th>
-                <th className="py-3 px-2 text-right">Points</th>
-                <th className="py-3 px-2 text-right hidden sm:table-cell">Games</th>
-                <th className="py-3 px-2 text-right hidden sm:table-cell">Wins</th>
-                <th className="py-3 px-2 text-right hidden md:table-cell">Streak</th>
-                <th className="py-3 px-2 text-right hidden md:table-cell">Avg Steps</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((entry, i) => (
-                <tr key={entry.userId} className={`border-b border-gray-800/50 ${i < 3 ? 'text-white' : 'text-gray-300'}`}>
-                  <td className="py-3 px-2">
-                    {entry.rank <= 3 ? (
-                      <span className="text-lg">{['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'][entry.rank - 1]}</span>
-                    ) : (
-                      <span className="text-gray-500">{entry.rank}</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-2 font-medium">{entry.username}</td>
-                  <td className="py-3 px-2 text-right font-mono text-orange-400">{entry.totalPoints}</td>
-                  <td className="py-3 px-2 text-right hidden sm:table-cell text-gray-400">{entry.gamesPlayed}</td>
-                  <td className="py-3 px-2 text-right hidden sm:table-cell text-gray-400">{entry.gamesWon}</td>
-                  <td className="py-3 px-2 text-right hidden md:table-cell text-gray-400">{entry.currentStreak}</td>
-                  <td className="py-3 px-2 text-right hidden md:table-cell text-gray-400">{entry.avgPathLength > 0 ? entry.avgPathLength.toFixed(1) : '-'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {leaderboard.map((entry, i) => (
+            <div
+              key={entry.userId}
+              className={`flex items-center gap-4 px-5 py-4 rounded-2xl border transition-colors ${
+                i === 0 ? 'bg-amber-500/5 border-amber-500/20' :
+                i === 1 ? 'bg-slate-500/5 border-slate-500/15' :
+                i === 2 ? 'bg-orange-700/5 border-orange-700/15' :
+                'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
+              }`}
+            >
+              {/* Rank */}
+              <div className="w-8 text-center flex-shrink-0">
+                {i < 3
+                  ? <span className="text-xl">{MEDALS[i]}</span>
+                  : <span className="text-sm font-bold text-slate-600" style={{ fontFamily: 'Space Mono, monospace' }}>{entry.rank}</span>
+                }
+              </div>
+
+              {/* Username */}
+              <div className="flex-1 min-w-0">
+                <div className={`font-semibold truncate ${i < 3 ? 'text-white' : 'text-slate-200'}`}>{entry.username}</div>
+                <div className="text-xs text-slate-500 mt-0.5 hidden sm:block">
+                  {entry.gamesPlayed} games · {entry.gamesWon} optimal · {entry.currentStreak > 0 ? `🔥 ${entry.currentStreak}` : 'no streak'}
+                </div>
+              </div>
+
+              {/* Avg steps */}
+              <div className="hidden md:block text-center">
+                <div className="text-sm font-bold text-slate-300" style={{ fontFamily: 'Space Mono, monospace' }}>
+                  {entry.avgPathLength > 0 ? entry.avgPathLength.toFixed(1) : '—'}
+                </div>
+                <div className="text-[9px] text-slate-600 uppercase tracking-widest mt-0.5">Avg steps</div>
+              </div>
+
+              {/* Points */}
+              <div className="text-right flex-shrink-0">
+                <div className={`text-lg font-bold ${i === 0 ? 'text-amber-400' : 'text-orange-400'}`} style={{ fontFamily: 'Space Mono, monospace' }}>
+                  {entry.totalPoints}
+                </div>
+                <div className="text-[9px] text-slate-600 uppercase tracking-widest">pts</div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

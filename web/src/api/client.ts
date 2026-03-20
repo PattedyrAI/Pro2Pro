@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 function getToken(): string | null {
   return localStorage.getItem('pro2pro_token');
@@ -40,7 +40,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
   if (res.status === 401 && token) {
     clearToken();
-    window.location.href = '/Pro2Pro/';
+    window.location.href = '/';
     throw new Error('Session expired');
   }
 
