@@ -31,7 +31,7 @@ export function startApiServer(): void {
   app.use('/api/leaderboard', leaderboardRoutes);
 
   // Serve web frontend from the same Express server
-  const webDist = path.resolve(__dirname, '../../../web/dist');
+  const webDist = path.resolve(__dirname, '../../web/dist');
   if (fs.existsSync(webDist)) {
     app.use(express.static(webDist));
     app.get('*', (_req, res) => {
