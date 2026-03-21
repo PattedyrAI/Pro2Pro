@@ -44,15 +44,14 @@ export function startApiServer(): void {
   app.use('/api/players', playerRoutes);
   app.use('/api/leaderboard', leaderboardRoutes);
 
-  // Serve web frontend from the same Express server
-  const webDist = path.resolve(__dirname, '../../web/dist');
-  console.log(`[API] Looking for web frontend at: ${webDist} (exists: ${fs.existsSync(webDist)})`);
-  if (fs.existsSync(webDist)) {
-    app.use(express.static(webDist));
+  // Serve web frontend — built into dist/public/ so it survives Railway's production image
+  const webPublic = path.resolve(__dirname, '../public');
+  if (fs.existsSync(webPublic)) {
+    app.use(express.static(webPublic));
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(webDist, 'index.html'));
+      res.sendFile(path.join(webPublic, 'index.html'));
     });
-    console.log('[API] Serving web frontend from web/dist');
+    console.log('[API] Serving web frontend from dist/public');
   }
 
   app.listen(config.apiPort, () => {
