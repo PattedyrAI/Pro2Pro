@@ -1,5 +1,7 @@
 node_modules/
 /dist/
+!/dist/public/
+!/dist/public/**
 data/*.db
 data/*.db-shm
 data/*.db-wal
