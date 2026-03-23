@@ -48,7 +48,7 @@ export function startApiServer(): void {
   const webPublic = path.resolve(__dirname, '../public');
   if (fs.existsSync(webPublic)) {
     app.use(express.static(webPublic));
-    app.get('*', (_req, res) => {
+    app.get('/{*path}', (_req, res) => {
       res.sendFile(path.join(webPublic, 'index.html'));
     });
     console.log('[API] Serving web frontend from dist/public');
