@@ -25,15 +25,15 @@ export function startApiServer(): void {
 
   // Debug filesystem (temporary)
   app.get('/api/debug/fs', (_req, res) => {
-    const webDist = path.resolve(__dirname, '../../web/dist');
-    const appDir = path.resolve(__dirname, '../../');
+    const distDir = path.resolve(__dirname, '..');
+    const publicDir = path.resolve(__dirname, '../public');
     res.json({
       dirname: __dirname,
-      appDir,
-      webDist,
-      webDistExists: fs.existsSync(webDist),
-      appContents: fs.existsSync(appDir) ? fs.readdirSync(appDir) : [],
-      webContents: fs.existsSync(`${appDir}/web`) ? fs.readdirSync(`${appDir}/web`) : [],
+      distDir,
+      publicDir,
+      publicExists: fs.existsSync(publicDir),
+      distContents: fs.existsSync(distDir) ? fs.readdirSync(distDir) : [],
+      publicContents: fs.existsSync(publicDir) ? fs.readdirSync(publicDir) : [],
     });
   });
 
