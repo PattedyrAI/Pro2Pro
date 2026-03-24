@@ -285,6 +285,7 @@ function runMigrations(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_bot_game_sessions_user ON bot_game_sessions(user_id);
   `);
+
 }
 
 export function closeDb(): void {

@@ -34,4 +34,28 @@ export async function handleAdmin(interaction: ChatInputCommandInteraction): Pro
       flags: 64,
     });
   }
+
+  if (sub === 'rename-player') {
+    const db = getDb();
+    const search = interaction.options.getString('player', true).trim();
+    const newName = interaction.options.getString('name', true).trim();
+
+    // Find the player — exact name match first, then case-insensitive partial
+    let player = db.prepare(`SELECT id, name FROM players WHERE name = ? COLLATE NOCASE`).get(search) as { id: number; name: string } | undefined;
+    if (!player) {
+      player = db.prepare(`SELECT id, name FROM players WHERE name LIKE ? COLLATE NOCASE LIMIT 1`).get(`%${search}%`) as { id: number; name: string } | undefined;
+    }
+
+    if (!player) {
+      await interaction.reply({ content: `No player found matching "${search}".`, flags: 64 });
+      return;
+    }
+
+    db.prepare(`UPDATE players SET name = ? WHERE id = ?`).run(newName, player.id);
+    playerGraph.build();
+    await interaction.reply({
+      content: `Renamed: **${player.name}** → **${newName}** (id: ${player.id}). This name will survive all future syncs.`,
+      flags: 64,
+    });
+  }
 }

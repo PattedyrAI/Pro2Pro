@@ -82,10 +82,21 @@ export function countShortestPaths(startId: number, endId: number): number {
   return pathCount.get(endId) ?? 0;
 }
 
+/** Fisher-Yates shuffle — randomizes array in-place */
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 /**
  * Find a path between two players where no team is reused across ANY link.
  * Once a team connects two players, it's banned for the rest of the path.
  * Uses DFS with depth limit. Returns null if no such path exists within maxDepth.
+ * Neighbors are shuffled so each call may find a different valid path, surfacing
+ * niche intermediate players rather than always routing through popular hubs.
  */
 export function findMultiTeamPath(
   startId: number,
@@ -103,7 +114,8 @@ export function findMultiTeamPath(
       return;
     }
 
-    for (const neighbor of playerGraph.getNeighbors(current)) {
+    const neighbors = shuffle(playerGraph.getNeighbors(current));
+    for (const neighbor of neighbors) {
       if (visited.has(neighbor)) continue;
 
       const edgeTeams = playerGraph.getSharedTeamIds(current, neighbor);

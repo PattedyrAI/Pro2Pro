@@ -137,7 +137,6 @@ export class PandaScoreSync {
       INSERT INTO players (id, name, full_name, nationality, image_url, updated_at)
       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(id) DO UPDATE SET
-        name = excluded.name,
         full_name = excluded.full_name,
         nationality = excluded.nationality,
         image_url = excluded.image_url,

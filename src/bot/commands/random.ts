@@ -13,6 +13,29 @@ const difficultyColors: Record<string, number> = {
   insane: 0x9B59B6,
 };
 
+/**
+ * Rolling memory of recently-used intermediate players in insane mode puzzles.
+ * Used to reject structurally identical paths (same regional bottlenecks every game).
+ * Holds the last INSANE_INTERMEDIATE_MEMORY player IDs added across all recent games.
+ */
+const recentInsaneIntermediates: number[] = [];
+const INSANE_INTERMEDIATE_MEMORY = 15;
+
+/** Returns true if every intermediate in the path was used recently — i.e. same structural route. */
+function isInsaneStalePath(intermediates: number[]): boolean {
+  if (intermediates.length === 0) return false;
+  const recentSet = new Set(recentInsaneIntermediates);
+  return intermediates.every(id => recentSet.has(id));
+}
+
+/** Add intermediates to the rolling window, trimming oldest entries. */
+function recordInsaneIntermediates(intermediates: number[]): void {
+  recentInsaneIntermediates.push(...intermediates);
+  if (recentInsaneIntermediates.length > INSANE_INTERMEDIATE_MEMORY) {
+    recentInsaneIntermediates.splice(0, recentInsaneIntermediates.length - INSANE_INTERMEDIATE_MEMORY);
+  }
+}
+
 export async function handleRandom(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply();
 
@@ -47,10 +70,14 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
       if (obscurity < 0.3) continue; // reject paths that are too "obvious"
     }
 
-    // For insane mode, verify a multi-team path actually exists (feasibility check)
+    // For insane mode, verify a multi-team path exists AND uses novel intermediates
+    let insaneIntermediates: number[] = [];
     if (difficultyKey === 'insane') {
       const mtPath = findMultiTeamPath(startId, endId, tier.maxPath);
       if (!mtPath) continue; // no feasible multi-team path within depth limit
+
+      insaneIntermediates = mtPath.path.slice(1, -1); // strip start + end, keep intermediates
+      if (isInsaneStalePath(insaneIntermediates)) continue; // same structural bottleneck as recent games — try again
     }
 
     const player1 = playerGraph.getPlayer(startId);
@@ -79,6 +106,11 @@ export async function handleRandom(interaction: ChatInputCommandInteraction): Pr
     );
 
     const customGameId = Number(insertResult.lastInsertRowid);
+
+    // Record intermediates so future insane games avoid the same structural route
+    if (difficultyKey === 'insane' && insaneIntermediates.length > 0) {
+      recordInsaneIntermediates(insaneIntermediates);
+    }
 
     const startFullTeams = playerGraph.getPlayerFullTeamNames(startId, 2);
     const endFullTeams = playerGraph.getPlayerFullTeamNames(endId, 2);

@@ -73,6 +73,16 @@ export async function registerCommands(): Promise<void> {
       )
       .addSubcommand(sub =>
         sub.setName('fix-female-flags').setDescription('Reset incorrect is_female flags and rebuild graph instantly')
+      )
+      .addSubcommand(sub =>
+        sub.setName('rename-player')
+          .setDescription('Rename a player — name will survive all future syncs (sync never overwrites names)')
+          .addStringOption(opt =>
+            opt.setName('player').setDescription('Current player name (partial match ok)').setRequired(true)
+          )
+          .addStringOption(opt =>
+            opt.setName('name').setDescription('The correct name').setRequired(true)
+          )
       ),
 
     new SlashCommandBuilder()
