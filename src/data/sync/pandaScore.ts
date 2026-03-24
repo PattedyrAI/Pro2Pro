@@ -321,10 +321,146 @@ export class PandaScoreSync {
       console.log(`[Sync] Pruned ${pruned.changes} orphaned players with no roster entries`);
     }
 
+    // Record sync timestamp so incremental syncs know where to start
+    db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('last_sync_at', ?)`).run(new Date().toISOString());
+
     // Rebuild the graph
     playerGraph.build();
 
     return { teams: teams.length, players: uniquePlayers, rosters: uniqueRosters };
+  }
+
+  /**
+   * Incremental sync — only fetch tournaments modified since the last sync.
+   * Used by the 6-hour scheduler. Never overwrites player names.
+   * Falls back to syncAll() if no prior sync timestamp exists.
+   */
+  async syncIncremental(): Promise<{ tournaments: number; rosters: number }> {
+    const db = getDb();
+
+    const row = db.prepare(`SELECT value FROM settings WHERE key = 'last_sync_at'`).get() as { value: string } | undefined;
+    if (!row) {
+      console.log('[Sync] No prior sync timestamp — running full sync first.');
+      await this.syncAll();
+      return { tournaments: 0, rosters: 0 };
+    }
+
+    const since = row.value;
+    console.log(`[Sync] Incremental sync — fetching tournaments modified after ${since}`);
+
+    const insertTeam = db.prepare(`
+      INSERT OR REPLACE INTO teams (id, name, acronym, image_url, updated_at)
+      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    const insertPlayer = db.prepare(`
+      INSERT INTO players (id, name, full_name, nationality, image_url, updated_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(id) DO UPDATE SET
+        full_name = excluded.full_name,
+        nationality = excluded.nationality,
+        image_url = excluded.image_url,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+
+    const insertRoster = db.prepare(`
+      INSERT OR IGNORE INTO rosters (player_id, team_id, tournament_id, tier) VALUES (?, ?, ?, ?)
+    `);
+
+    const markFemale = db.prepare(`UPDATE players SET is_female = 1 WHERE id = ?`);
+    const ensureFemalePlayer = db.prepare(`
+      INSERT OR IGNORE INTO players (id, name, is_female) VALUES (?, ?, 1)
+    `);
+
+    // Only recently-modified past tournaments
+    const tournaments = await this.fetchAllPages<any>(
+      '/csgo/tournaments/past',
+      { sort: '-modified_at', 'filter[modified_after]': since },
+      'Incremental tournaments'
+    );
+
+    console.log(`[Sync] ${tournaments.length} tournaments updated since last sync`);
+
+    let tournamentRosters = 0;
+    const playerTierCounts = new Map<number, { aPlus: Set<number>; bPlus: Set<number>; cct: Set<number> }>();
+
+    const rosterTransaction = db.transaction(() => {
+      for (const tournament of tournaments) {
+        if (!tournament.expected_roster || !Array.isArray(tournament.expected_roster)) continue;
+
+        const tier = classifyTournamentTier(tournament);
+
+        for (const entry of tournament.expected_roster) {
+          const team = entry.team;
+          const players = entry.players;
+
+          if (!team?.id || !team?.name || !Array.isArray(players)) continue;
+          if (isFemaleTeam(team)) {
+            for (const player of players) {
+              if (!player?.id) continue;
+              const updated = markFemale.run(player.id);
+              if (updated.changes === 0 && player.name) ensureFemalePlayer.run(player.id, player.name);
+            }
+            continue;
+          }
+
+          insertTeam.run(team.id, team.name, team.acronym ?? null, team.image_url ?? null);
+
+          for (const player of players) {
+            if (!player?.id || !player?.name) continue;
+
+            insertPlayer.run(
+              player.id,
+              player.name,
+              player.first_name && player.last_name ? `${player.first_name} ${player.last_name}` : null,
+              player.nationality ?? null,
+              player.image_url ?? null
+            );
+
+            const tierStr = tier.aPlus ? 'a_plus' : tier.bPlus ? 'b_plus' : tier.cct ? 'cct' : 'other';
+            insertRoster.run(player.id, team.id, tournament.id ?? null, tierStr);
+            tournamentRosters++;
+
+            if (tournament.id && (tier.aPlus || tier.bPlus || tier.cct)) {
+              let counts = playerTierCounts.get(player.id);
+              if (!counts) {
+                counts = { aPlus: new Set(), bPlus: new Set(), cct: new Set() };
+                playerTierCounts.set(player.id, counts);
+              }
+              if (tier.aPlus) counts.aPlus.add(tournament.id);
+              if (tier.bPlus) counts.bPlus.add(tournament.id);
+              if (tier.cct) counts.cct.add(tournament.id);
+            }
+          }
+        }
+      }
+    });
+
+    rosterTransaction();
+
+    // Increment tier counts (don't replace — we're adding new data on top of existing)
+    const incrementTierCount = db.prepare(`
+      INSERT INTO player_tournament_counts (player_id, a_plus_count, b_plus_count, cct_count)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(player_id) DO UPDATE SET
+        a_plus_count = player_tournament_counts.a_plus_count + excluded.a_plus_count,
+        b_plus_count = player_tournament_counts.b_plus_count + excluded.b_plus_count,
+        cct_count    = player_tournament_counts.cct_count    + excluded.cct_count
+    `);
+
+    const tierTransaction = db.transaction(() => {
+      for (const [playerId, counts] of playerTierCounts) {
+        incrementTierCount.run(playerId, counts.aPlus.size, counts.bPlus.size, counts.cct.size);
+      }
+    });
+    tierTransaction();
+
+    // Update last sync timestamp
+    db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('last_sync_at', ?)`).run(new Date().toISOString());
+
+    playerGraph.build();
+    console.log(`[Sync] Incremental sync complete: ${tournaments.length} tournaments, ${tournamentRosters} new roster entries`);
+    return { tournaments: tournaments.length, rosters: tournamentRosters };
   }
 }
 

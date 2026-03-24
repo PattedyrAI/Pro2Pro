@@ -28,11 +28,11 @@ export function startScheduler(): void {
     await generateAndPostDailyPuzzle();
   });
 
-  // Data sync every 6 hours
+  // Incremental sync every 6 hours — only fetches new/modified tournaments, never touches names
   cron.schedule('0 */6 * * *', async () => {
-    console.log('[Scheduler] Running data sync...');
+    console.log('[Scheduler] Running incremental sync...');
     try {
-      await pandaScoreSync.syncAll();
+      await pandaScoreSync.syncIncremental();
     } catch (error) {
       console.error('[Scheduler] Sync failed:', error);
     }

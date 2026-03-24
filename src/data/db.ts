@@ -286,6 +286,13 @@ function runMigrations(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_bot_game_sessions_user ON bot_game_sessions(user_id);
   `);
 
+  // Key-value settings table — used to track last_sync_at for incremental syncs
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `);
 }
 
 export function closeDb(): void {
